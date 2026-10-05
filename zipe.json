@@ -1,0 +1,16 @@
+{
+  "name": "zipe",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Package manager for Z- 3.4.0",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/zipe.json",
+  "bin": {
+    "windows": "dist/zipe.exe",
+    "linux": "dist/zipe"
+  },
+  "files": {
+    "src/zipe.cpp": "// zipe.cpp - package manager for Z- 3.4.0\n#include <bits/stdc++.h>\n#include <filesystem>\n#ifdef _WIN32\n  #include <windows.h>\n  #include <winhttp.h>\n  #pragma comment(lib, \"Winhttp.lib\")\n#endif\n\nusing namespace std;\nnamespace fs = std::filesystem;\n\n// ... полный код zipe.cpp ...\n// (вставь сюда содержимое своего src/zipe.cpp)\n",
+    "build.bat": "@echo off\ng++ -std=c++17 -O2 -static -static-libgcc -static-libstdc++ -o dist\\zipe.exe src\\zipe.cpp -lwinhttp\necho zipe built.\n",
+    "build.sh": "#!/bin/sh\ng++ -std=c++17 -O2 -o dist/zipe src/zipe.cpp\necho zipe built.\n"
+  }
+}

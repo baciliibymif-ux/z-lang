@@ -1,0 +1,13 @@
+{
+  "name": "z-stdlib",
+  "version": "3.4.0",
+  "author": "baciliibymif-ux",
+  "description": "Z- core standard library and runtime",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/stdlib.json",
+  "files": {
+    "main.z-": "# Z- stdlib entry — re-exports for convenience\nuse \"arith\";\nuse \"dice\";\nuse \"text\";\nuse \"flow\";\n",
+    "arith.z-": "fn gcd::(a, b) {\n    a = @abs(a); b = @abs(b);\n    while (b != 0) { let t = b; b = a % b; a = t; }\n    return a;\n}\nfn lcm::(a, b) {\n    if (a == 0 || b == 0) { return 0; }\n    return @abs(a * b) / gcd(a, b);\n}\nfn is_prime::(n) {\n    if (n < 2) { return false; }\n    if (n % 2 == 0) { return n == 2; }\n    let i = 3;\n    while (i * i <= n) {\n        if (n % i == 0) { return false; }\n        i = i + 2;\n    }\n    return true;\n}\n",
+    "text.z-": "fn strip::(s) {\n    let i = 0;\n    while (i < @len(s) && @substr(s, i, 1) == \" \") { i = i + 1; }\n    let j = @len(s);\n    while (j > i && @substr(s, j - 1, 1) == \" \") { j = j - 1; }\n    return @substr(s, i, j - i);\n}\nfn is_palindrome::(s) {\n    let t = @lower(s);\n    let r = \"\";\n    let i = @len(t) - 1;\n    while (i >= 0) { r = r + @substr(t, i, 1); i = i - 1; }\n    return t == r;\n}\n",
+    "flow.z-": "fn sum::(xs) { let s = 0; for x in xs { s = s + x; } return s; }\nfn product::(xs) { let s = 1; for x in xs { s = s * x; } return s; }\nfn unique::(xs) {\n    let seen = {};\n    let out = [];\n    for x in xs {\n        let k = @str(x);\n        if (!@has(seen, k)) { seen[k] = 1; @push(out, x); }\n    }\n    return out;\n}\n"
+  }
+}
