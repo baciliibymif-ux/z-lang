@@ -1,0 +1,11 @@
+{
+  "name": "vault",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Save/load JSON, lines, INI configs",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/packages/vault.json",
+  "deps": [],
+  "files": {
+    "main.z-": "fn save::(path, obj) {\n    @write(path, @json_encode(obj));\n    return true;\n}\n\nfn load::(path) {\n    if (!@exists(path)) { return null; }\n    return @json_decode(@read(path));\n}\n\nfn save_lines::(path, lines) {\n    @write(path, @join(lines, \"\\n\"));\n    return true;\n}\n\nfn load_lines::(path) {\n    if (!@exists(path)) { return []; }\n    return @split(@read(path), \"\\n\");\n}\n\nfn save_ini::(path, m) {\n    let out = [];\n    for k in @keys(m) {\n        @push(out, @str(k) + \"=\" + @str(m[k]));\n    }\n    @write(path, @join(out, \"\\n\"));\n    return true;\n}\n\nfn load_ini::(path) {\n    let lines = load_lines(path);\n    let m = {};\n    for line in lines {\n        let trimmed = line;\n        let eq = -1;\n        let i = 0;\n        while (i < @len(trimmed)) {\n            if (@substr(trimmed, i, 1) == \"=\") {\n                eq = i;\n                break;\n            }\n            i = i + 1;\n        }\n        if (eq >= 0) {\n            let k = @substr(trimmed, 0, eq);\n            let v = @substr(trimmed, eq + 1);\n            m[k] = v;\n        }\n    }\n    return m;\n}\n\nfn config_get::(path, key, default) {\n    let m = load_ini(path);\n    if (@has(m, key)) { return m[key]; }\n    return default;\n}\n\nfn config_set::(path, key, value) {\n    let m = load_ini(path);\n    m[key] = value;\n    return save_ini(path, m);\n}\n\nfn append_line::(path, line) {\n    @append(path, line + \"\\n\");\n    return true;\n}\n"
+  }
+}
