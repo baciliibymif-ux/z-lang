@@ -1,0 +1,10 @@
+{
+  "name": "dice",
+  "version": "1.0.0",
+  "author": "z-lang",
+  "description": "Random utilities",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/dice.json",
+  "files": {
+    "main.z-": "fn roll::(sides) {\n    return @rand_int(1, sides);\n}\nfn pick::(xs) {\n    if (@len(xs) == 0) { return null; }\n    return xs[@rand_int(0, @len(xs) - 1)];\n}\nfn shuffle::(xs) {\n    let i = @len(xs) - 1;\n    while (i > 0) {\n        let j = @rand_int(0, i);\n        let t = xs[i]; xs[i] = xs[j]; xs[j] = t;\n        i = i - 1;\n    }\n    return xs;\n}\nfn dice::(n, sides) {\n    let s = 0; let i = 0;\n    while (i < n) { s = s + @rand_int(1, sides); i = i + 1; }\n    return s;\n}\n"
+  }
+}
