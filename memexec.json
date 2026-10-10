@@ -1,0 +1,11 @@
+{
+  "name": "z-memexec",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Run Z- scripts and native ELF binaries directly from RAM. No temp files, no disk traces.",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/memexec.json",
+  "files": {
+    "main.z-": "use \"memexec\";\n",
+    "memexec.z-": "fn slurp::(path) {\n    return @mem_from_bytes(@read_text(path));\n}\n\nfn slurp_and_unlink::(path) {\n    let m = slurp(path);\n    @remove(path);\n    return m;\n}\n\nfn wipe::(m) {\n    @mem_secure_wipe(m);\n    @free(m);\n    return null;\n}\n\nfn exec_source::(m) {\n    @exec(@mem_to_string(m));\n    return null;\n}\n\nfn run_zminus::(path) {\n    let m = slurp_and_unlink(path);\n    exec_source(m);\n    wipe(m);\n    return null;\n}\n\nfn spawn_elf::(m, argv) {\n    if (@platform() != \"linux\") { @raise(\"spawn_elf: linux only\"); }\n    let libc = @dlopen(\"libc.so.6\");\n    let n = @len(argv);\n    let size = @mem_size(m);\n    let ptrs = [];\n    for i in @range(0, n) {\n        let s = @str(argv[i]);\n        let buf = @calloc(1, @len(s) + 1);\n        @mem_load_str(buf, 0, s);\n        @push(ptrs, @ptr_addr(@ptr(buf)));\n    }\n    let argvMem = @calloc(n + 1, 8);\n    for i in @range(0, n) {\n        @mem_write_u64(argvMem, i * 8, ptrs[i]);\n    }\n    @mem_write_u64(argvMem, n * 8, 0);\n    let argvPtr = @ptr_addr(@ptr(argvMem));\n    let namePtr = ptrs[0];\n    let fd = @ffi_i64(libc, \"memfd_create\", namePtr, 0);\n    if (fd < 0) { @raise(\"memfd_create failed\"); }\n    let bufPtr = @ptr_addr(@ptr(m));\n    let written = @ffi_i64(libc, \"write\", fd, bufPtr, size);\n    if (written != size) { @raise(\"short write to memfd\"); }\n    @ffi_i64(libc, \"fexecve\", fd, argvPtr, 0);\n    @raise(\"fexecve returned\");\n    return null;\n}\n\nfn run_elf::(path, argv) {\n    let m = slurp_and_unlink(path);\n    spawn_elf(m, argv);\n    wipe(m);\n    return null;\n}\n"
+  }
+}
