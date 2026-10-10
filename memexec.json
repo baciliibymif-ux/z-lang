@@ -1,5 +1,5 @@
 {
-  "name": "z-memexec",
+  "name": "memexec",
   "version": "1.0.0",
   "author": "baciliibymif-ux",
   "description": "Run Z- scripts and native ELF binaries directly from RAM. No temp files, no disk traces.",
