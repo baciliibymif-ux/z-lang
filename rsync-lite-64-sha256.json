@@ -1,0 +1,10 @@
+{
+  "name": "rsync-lite-64-sha256",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Rolling-hash file sync — sends only diffs. [variant 5]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/rsync-lite-64-sha256.json",
+  "files": {
+    "main.z-": "// rsync-lite — rolling-hash file synchronization\n// Block size: 4 KiB, Hash: sha256\n\nconst BLOCK_SIZE = 4 * 1024;\n\nfn block_hashes::(data) {\n    let out = [];\n    let total = @len(data);\n    let mut off = 0;\n    while (off < total) {\n        let n = @min(BLOCK_SIZE, total - off);\n        let slice = @str_slice_utf8(data, off, n);\n        @push(out, {\"offset\": off, \"size\": n, \"hash\": @sha256_hex(@bytes(slice))});\n        off += n;\n    }\n    return out;\n}\n\nfn compute_delta::(source, target_hashes) {\n    let source_set = {};\n    for b in block_hashes(source) { source_set[b[\"hash\"]] = b; }\n    let delta = [];\n    for tb in target_hashes {\n        if (@map_has_key(source_set, tb[\"hash\"])) {\n            @push(delta, {\"op\": \"copy\", \"from\": source_set[tb[\"hash\"]][\"offset\"],\n                           \"size\": tb[\"size\"]});\n        } else {\n            @push(delta, {\"op\": \"insert\", \"target_offset\": tb[\"offset\"],\n                           \"size\": tb[\"size\"]});\n        }\n    }\n    return delta;\n}\n\nfn apply_delta::(source, target, delta) {\n    let out = \"\";\n    for op in delta {\n        if (op[\"op\"] == \"copy\") { out += @str_slice_utf8(source, op[\"from\"], op[\"size\"]); }\n        else { out += @str_slice_utf8(target, op[\"target_offset\"], op[\"size\"]); }\n    }\n    return out;\n}\n\nfn transfer_ratio::(delta) {\n    let inserted = 0;\n    let copied = 0;\n    for op in delta {\n        if (op[\"op\"] == \"insert\") { inserted += op[\"size\"]; }\n        else { copied += op[\"size\"]; }\n    }\n    return inserted / (inserted + copied);\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
