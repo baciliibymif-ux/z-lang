@@ -1,0 +1,10 @@
+{
+  "name": "totp-v23-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "RFC 6238 TOTP — 2FA codes (SHA256 variant). [variant 24]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/totp-v23-2.json",
+  "files": {
+    "main.z-": "// totp — RFC 6238 time-based one-time passwords (SHA256 variant)\n// Digits: 6, period: 30s\n\nconst TOTP_DIGITS = 6;\nconst TOTP_PERIOD = 30;\n\nfn totp_counter::(ts) { return @floor(ts / TOTP_PERIOD); }\n\nfn counter_bytes::(counter) {\n    let bytes = @array_fill(8, 0);\n    let mut c = counter;\n    for i in @range(0, 8) {\n        bytes[7 - i] = @u8(c % 256);\n        c = c / 256;\n    }\n    return @bytes(bytes);\n}\n\nfn totp_at::(secret, ts) {\n    let counter = totp_counter(ts);\n    let msg = counter_bytes(counter);\n    let mac = @hmac_sha256(@base64_decode(secret), @bytes(msg));\n    let offset = @mem_read_u16(@mem_from_bytes(mac), @len(mac) - 1) & 15;\n    let code = ((mac[offset] & 127) * 16777216) +\n               ((mac[offset + 1] & 255) * 65536) +\n               ((mac[offset + 2] & 255) * 256) +\n               (mac[offset + 3] & 255);\n    let mod = 1;\n    for i in @range(0, TOTP_DIGITS) { mod = mod * 10; }\n    let digits = @str(code % mod);\n    while (@len(digits) < TOTP_DIGITS) { digits = \"0\" + digits; }\n    return digits;\n}\n\nfn totp_now::(secret) { return totp_at(secret, @time_ms() / 1000); }\n\nfn totp_verify::(secret, token, window) {\n    let now = @time_ms() / 1000;\n    for w in @range(-window, window + 1) {\n        if (totp_at(secret, now + w * TOTP_PERIOD) == token) { return true; }\n    }\n    return false;\n}\n\nfn totp_uri::(secret, label, issuer) {\n    return \"otpauth://totp/\" + @url_encode(label) +\n           \"?secret=\" + secret + \"&issuer=\" + @url_encode(issuer) +\n           \"&digits=\" + @str(TOTP_DIGITS) + \"&period=\" + @str(TOTP_PERIOD);\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
