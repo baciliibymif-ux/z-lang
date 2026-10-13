@@ -1,0 +1,10 @@
+{
+  "name": "counter-dist-v7-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Shared-memory counter usable across processes. [variant 8]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/counter-dist-v7-2.json",
+  "files": {
+    "main.z-": "// counter-dist — shared-memory counter\n// Backend: shm\n\nfn cd_create::(name, initial) {\n    let shm = @shm_create(name, 16);\n    @shm_write(shm, 0, @bytes(@json_encode({\"value\": initial})));\n    return shm;\n}\n\nfn cd_open::(name) { return @shm_open_z(name); }\n\nfn cd_get::(shm) {\n    return @json_decode(@mem_to_string(@mem_from_bytes(@shm_read(shm, 0, 16))))[\"value\"];\n}\n\nfn cd_set::(shm, v) {\n    @shm_write(shm, 0, @bytes(@json_encode({\"value\": v})));\n    return v;\n}\n\nfn cd_inc::(shm) { let v = cd_get(shm) + 1; cd_set(shm, v); return v; }\nfn cd_add::(shm, n) { let v = cd_get(shm) + n; cd_set(shm, v); return v; }\nfn cd_reset::(shm) { return cd_set(shm, 0); }\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}

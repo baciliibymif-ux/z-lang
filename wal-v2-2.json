@@ -1,0 +1,10 @@
+{
+  "name": "wal-v2-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Write-ahead log with replay and checkpoints. [variant 3]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/wal-v2-2.json",
+  "files": {
+    "main.z-": "// wal — write-ahead log with replay and checkpoint\n// Hash: sha256\n\nfn wal_open::(path) {\n    return {\"path\": path, \"entries\": [], \"checkpoint\": 0};\n}\n\nfn wal_append::(wal, op, key, value) {\n    let entry = {\"seq\": @len(wal[\"entries\"]), \"ts\": @time_ms(),\n                  \"op\": op, \"key\": key, \"value\": value};\n    @push(wal[\"entries\"], entry);\n    @append_text(wal[\"path\"], @json_encode(entry) + \"\\n\");\n    return entry[\"seq\"];\n}\n\nfn wal_replay::(wal) {\n    if (!@exists(wal[\"path\"])) { return 0; }\n    let lines = @read_lines(wal[\"path\"]);\n    let entries = [];\n    for line in lines {\n        if (@str_is_blank(line)) { continue; }\n        @push(entries, @json_decode(line));\n    }\n    wal[\"entries\"] = entries;\n    return @len(entries);\n}\n\nfn wal_apply::(wal, state) {\n    let applied = 0;\n    for e in wal[\"entries\"] {\n        if (e[\"seq\"] <= wal[\"checkpoint\"]) { continue; }\n        if (e[\"op\"] == \"set\") { state[e[\"key\"]] = e[\"value\"]; }\n        else if (e[\"op\"] == \"del\") { state = @map_omit_keys(state, [e[\"key\"]]); }\n        applied += 1;\n    }\n    return applied;\n}\n\nfn wal_checkpoint::(wal, seq) {\n    wal[\"checkpoint\"] = seq;\n    let kept = [];\n    for e in wal[\"entries\"] { if (e[\"seq\"] > seq) { @push(kept, e); } }\n    wal[\"entries\"] = kept;\n    let out = \"\";\n    for e in kept { out += @json_encode(e) + \"\\n\"; }\n    @write_text(wal[\"path\"], out);\n    return true;\n}\n\nfn wal_size::(wal) { return @len(wal[\"entries\"]); }\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
