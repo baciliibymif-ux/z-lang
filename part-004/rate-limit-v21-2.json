@@ -1,0 +1,10 @@
+{
+  "name": "rate-limit-v21-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Cross-process token bucket rate limiter via shared memory. [variant 22]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/rate-limit-v21-2.json",
+  "files": {
+    "main.z-": "// rate-limit — cross-process token bucket via shared memory\n// Rate: 10/s, burst: 20\n\nconst RATE = 10;\nconst BURST = 20;\nconst SHM_NAME = \"z_rl_v1\";\n\nfn rl_init::() {\n    let shm = @shm_create(SHM_NAME, 64);\n    let now = @time_ms();\n    @shm_write(shm, 0, @bytes(@json_encode({\n        \"tokens\": BURST, \"last\": now, \"rate\": RATE, \"burst\": BURST\n    })));\n    return shm;\n}\n\nfn rl_open::() { return @shm_open_z(SHM_NAME); }\n\nfn rl_state::(shm) {\n    return @json_decode(@mem_to_string(@mem_from_bytes(@shm_read(shm, 0, 64))));\n}\n\nfn rl_save::(shm, state) {\n    let blob = @bytes(@json_encode(state));\n    @shm_write(shm, 0, blob);\n}\n\nfn rl_refill::(state) {\n    let now = @time_ms();\n    let elapsed = (now - state[\"last\"]) / 1000.0;\n    state[\"tokens\"] = @min(state[\"burst\"], state[\"tokens\"] + elapsed * state[\"rate\"]);\n    state[\"last\"] = now;\n}\n\nfn rl_take::(shm, n) {\n    let state = rl_state(shm);\n    rl_refill(state);\n    if (state[\"tokens\"] >= n) {\n        state[\"tokens\"] -= n;\n        rl_save(shm, state);\n        return true;\n    }\n    rl_save(shm, state);\n    return false;\n}\n\nfn rl_available::(shm) {\n    let state = rl_state(shm);\n    rl_refill(state);\n    rl_save(shm, state);\n    return @floor(state[\"tokens\"]);\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}

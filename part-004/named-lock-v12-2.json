@@ -1,0 +1,10 @@
+{
+  "name": "named-lock-v12-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Cross-process named lock via shared memory. [variant 13]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/named-lock-v12-2.json",
+  "files": {
+    "main.z-": "// named-lock — cross-process named lock\n// Backend: shm\n\nfn lock_create::(name) {\n    let shm = @shm_create(name + \".lock\", 32);\n    @shm_write(shm, 0, @bytes(@json_encode({\"holder\": \"\", \"since\": 0})));\n    return shm;\n}\n\nfn lock_open::(name) { return @shm_open_z(name + \".lock\"); }\n\nfn lock_state::(shm) {\n    return @json_decode(@mem_to_string(@mem_from_bytes(@shm_read(shm, 0, 32))));\n}\n\nfn lock_acquire::(shm, holder) {\n    let s = lock_state(shm);\n    if (s[\"holder\"] == \"\") {\n        @shm_write(shm, 0, @bytes(@json_encode({\"holder\": holder, \"since\": @time_ms()})));\n        return true;\n    }\n    return false;\n}\n\nfn lock_release::(shm, holder) {\n    let s = lock_state(shm);\n    if (s[\"holder\"] != holder) { return false; }\n    @shm_write(shm, 0, @bytes(@json_encode({\"holder\": \"\", \"since\": 0})));\n    return true;\n}\n\nfn lock_held_by::(shm) { return lock_state(shm)[\"holder\"]; }\n\nfn lock_age_ms::(shm) {\n    let s = lock_state(shm);\n    if (s[\"holder\"] == \"\") { return 0; }\n    return @time_ms() - s[\"since\"];\n}\n\nfn lock_force_release::(shm) {\n    @shm_write(shm, 0, @bytes(@json_encode({\"holder\": \"\", \"since\": 0})));\n    return true;\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
