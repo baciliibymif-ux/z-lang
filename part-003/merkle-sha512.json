@@ -1,0 +1,10 @@
+{
+  "name": "merkle-sha512",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Merkle tree with inclusion proofs and verification. [variant 2]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/merkle-sha512.json",
+  "files": {
+    "main.z-": "// merkle — Merkle tree over data blocks\n// Hash: sha256\n\nfn leaf_hash::(data) { return @sha256_hex(@bytes(\"\\x00\" + data)); }\nfn node_hash::(left, right) { return @sha256_hex(@bytes(\"\\x01\" + left + right)); }\n\nfn build_tree::(blocks) {\n    if (@len(blocks) == 0) { @raise(\"merkle: empty\"); }\n    let mut level = [];\n    for b in blocks { @push(level, leaf_hash(b)); }\n    let mut tree = [level];\n    while (@len(level) > 1) {\n        let next = [];\n        let mut i = 0;\n        while (i < @len(level)) {\n            if (i + 1 < @len(level)) {\n                @push(next, node_hash(level[i], level[i + 1]));\n                i += 2;\n            } else {\n                @push(next, level[i]);\n                i += 1;\n            }\n        }\n        level = next;\n        @push(tree, level);\n    }\n    return {\"levels\": tree, \"root\": level[0]};\n}\n\nfn root_of::(tree) { return tree[\"root\"]; }\n\nfn proof_for::(tree, index) {\n    let proof = [];\n    let mut idx = index;\n    let levels = tree[\"levels\"];\n    for level_idx in @range(0, @len(levels) - 1) {\n        let level = levels[level_idx];\n        let sibling = (idx % 2 == 0) ? idx + 1 : idx - 1;\n        if (sibling < @len(level)) {\n            @push(proof, {\"sibling\": level[sibling], \"left\": idx % 2 == 1});\n        }\n        idx = @floor(idx / 2);\n    }\n    return proof;\n}\n\nfn verify_proof::(leaf, proof, root) {\n    let mut h = leaf_hash(leaf);\n    for step in proof {\n        if (step[\"left\"]) { h = node_hash(step[\"sibling\"], h); }\n        else { h = node_hash(h, step[\"sibling\"]); }\n    }\n    return h == root;\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}

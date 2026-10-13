@@ -1,0 +1,10 @@
+{
+  "name": "integrity-v21-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Directory integrity monitor with baseline manifest. [variant 22]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/integrity-v21-2.json",
+  "files": {
+    "main.z-": "// integrity — file integrity monitor\n// Hash: sha256\n\nfn baseline_dir::(root) {\n    let manifest = {};\n    for path in @fs_walk(root) {\n        if (@is_file(path)) { manifest[path] = @sha256_hex(@bytes(@read(path))); }\n    }\n    return manifest;\n}\n\nfn check_dir::(root, baseline) {\n    let changed = [];\n    let missing = [];\n    let added = [];\n    let current = baseline_dir(root);\n    for path in @map_keys_sorted(baseline) {\n        if (!@map_has_key(current, path)) { @push(missing, path); }\n        else if (current[path] != baseline[path]) { @push(changed, path); }\n    }\n    for path in @map_keys_sorted(current) {\n        if (!@map_has_key(baseline, path)) { @push(added, path); }\n    }\n    return {\"changed\": changed, \"missing\": missing, \"added\": added};\n}\n\nfn save_manifest::(manifest, path) {\n    @write_text(path, @json_pretty(@json_encode(manifest)));\n    return true;\n}\n\nfn load_manifest::(path) { return @json_decode(@read_text(path)); }\nfn hash_file::(path) { return @sha256_hex(@bytes(@read(path))); }\n\nfn is_clean::(result) {\n    return @len(result[\"changed\"]) == 0 && @len(result[\"missing\"]) == 0 &&\n           @len(result[\"added\"]) == 0;\n}\n\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
