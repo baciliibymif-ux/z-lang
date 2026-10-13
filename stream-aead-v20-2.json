@@ -1,0 +1,10 @@
+{
+  "name": "stream-aead-v20-2",
+  "version": "1.0.0",
+  "author": "baciliibymif-ux",
+  "description": "Chunked authenticated encryption for large payloads. [variant 21]",
+  "site": "https://raw.githubusercontent.com/baciliibymif-ux/z-lang/main/stream-aead-v20-2.json",
+  "files": {
+    "main.z-": "// stream-aead — chunked authenticated encryption\n// Chunk size: 64 KiB, Key size: 32\n\nconst CHUNK = 64 * 1024;\n\nfn derive_stream_key::(password, salt) {\n    return @crypto_pbkdf2(password, salt, 100000, 32);\n}\n\nfn encrypt_stream::(plaintext, key) {\n    let total = @len(plaintext);\n    let chunks = [];\n    let mut off = 0;\n    let mut seq = 0;\n    while (off < total) {\n        let n = @min(CHUNK, total - off);\n        let slice = @str_slice_utf8(plaintext, off, n);\n        let mem = @mem_from_bytes(@bytes(slice));\n        let nonce = @crypto_random_bytes(12);\n        @mem_encrypt(mem, key);\n        @push(chunks, {\"seq\": seq, \"nonce\": @base64(nonce),\n                        \"data\": @base64(@mem_to_bytes(mem))});\n        @free(mem);\n        off += n;\n        seq += 1;\n    }\n    return @json_encode({\"chunks\": chunks, \"total\": total});\n}\n\nfn decrypt_stream::(envelope, key) {\n    let env = @json_decode(envelope);\n    let chunks = env[\"chunks\"];\n    let out = \"\";\n    for i in @range(0, @len(chunks)) {\n        let c = chunks[i];\n        let cipher = @base64_decode(c[\"data\"]);\n        let mem = @mem_from_bytes(cipher);\n        @mem_decrypt(mem, key);\n        out += @mem_to_string(mem);\n        @free(mem);\n    }\n    return out;\n}\n\nfn chunk_count::(envelope) { return @len(@json_decode(envelope)[\"chunks\"]); }\nfn version::() { return \"1.0.0\"; }\n"
+  }
+}
